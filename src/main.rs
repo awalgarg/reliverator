@@ -23,10 +23,16 @@ lazy_static! {
 
 use crate::smtp::sendmail;
 
+const SOFTWARE_VERSION: &str = "develop";
+
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	if args.len() == 2 && args[1] == "init" {
 		database::init();
+		return;
+	}
+	if args.len() == 2 && args[1] == "version" {
+		println!("{}", SOFTWARE_VERSION);
 		return;
 	}
 
