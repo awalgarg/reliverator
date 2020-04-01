@@ -1,0 +1,60 @@
+.\"
+.\" Copyright (c) 2020 Ted Unangst
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt RELIVERATOR 8
+.Os
+.Sh NAME
+.Nm reliverator
+.Nd a mail server for 2020
+.Sh DESCRIPTION
+The
+.Nm
+daemon sends and receives email using smtp.
+.Ss Setup
+.Pp
+Run init to create a database.
+.Pp
+.Nm
+listens on 0.0.0.0:25 and 127.0.0.1:587.
+Connections from remote servers are delivered locally.
+Connections to the submission port are relayed.
+.Ss Build
+Start by running make.
+Please be patient; rustc is slow.
+.Ss Config
+The follow options may be specified in the config file.
+.Bl -tag -width servername
+.It servername
+Server's hostname.
+.It alias
+alias root tedu to have root's mail delivered to tedu.
+.It certfile
+The server's public certificate chain.
+.It keyname
+The server's private key.
+.El
+.Ss Security
+.Nm
+is not to be trusted.
+.Sh FILES
+.Bl -tag -width reliverator.conf
+.It Pa reliverator.conf
+Config file.
+.It Pa reliverator.db
+Storage for messages to be relayed.
+.El
+.Sh CAVEATS
+Good grief.

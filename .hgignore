@@ -1,0 +1,7 @@
+target
+bearssl-0.6
+\.a$
+\.o$
+\.swp$
+reliverator.conf
+reliverator.db
