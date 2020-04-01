@@ -28,8 +28,11 @@ struct ReadHandle<'a> {
 extern "C" fn read_callback(handle: *mut ReadHandle, buf: *mut u8, buflen: usize) -> i32 {
 	unsafe {
 		let mut slice = slice::from_raw_parts_mut(buf, buflen);
-		let rv = (*handle).reader.read(&mut slice).unwrap();
-		return rv.try_into().unwrap();
+		let rv = match (*handle).reader.read(&mut slice) {
+			Err(_) => return -1,
+			Ok(rv) => rv.try_into().unwrap(),
+		};
+		return rv;
 	}
 }
 #[repr(C)]
@@ -40,16 +43,10 @@ extern "C" fn write_callback(handle: *mut WriteHandle, buf: *const u8, buflen: u
 	unsafe {
 		let slice = slice::from_raw_parts(buf, buflen);
 		let rv = match (*handle).writer.write(slice) {
-			Err(e) => {
-				println!("error writing from ssl: {}", e);
-				return -1;
-			},
-			Ok(rv) => {
-				 rv.try_into().unwrap()
-			},
+			Err(_) => return -1,
+			Ok(rv) => rv.try_into().unwrap(),
 		};
-		if let Err(e) = (*handle).writer.flush() {
-			println!("error flushing: {}", e);
+		if let Err(_) = (*handle).writer.flush() {
 			return -1;
 		};
 		return rv;
