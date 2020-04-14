@@ -4,6 +4,8 @@ use std::sync::Mutex;
 use std::ffi::CString;
 use std::env;
 use std::time::Duration;
+use libc;
+use std::convert::TryInto;
 #[macro_use]
 extern crate lazy_static;
 
@@ -117,20 +119,18 @@ fn redeliverator(config: Config) {
 
 #[link(name = "c")]
 extern {
-	fn uid_from_user(user: *const i8, uid: *mut i32) -> i32;
 	fn chown(path: *const i8, uid: i32, gid: i32) -> i32;
 }
 
 fn find_userid(user: &String) -> i32 {
 	let _lock = PWLOCK.lock();
 	unsafe {
-		let mut uid: i32 = -1;
 		let cstr = CString::new(user.as_str()).unwrap();
-		let rv = uid_from_user(cstr.as_ptr(), &mut uid);
-		if rv == -1 {
+		let pwd = libc::getpwnam(cstr.as_ptr());
+		if pwd.is_null() {
 			return -1;
 		}
-		return uid;
+		return (*pwd).pw_uid.try_into().unwrap();
 	}
 }
 

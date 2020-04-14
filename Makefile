@@ -17,7 +17,8 @@ step0: bearssl-0.6/build/libbearssl.a bearffi/libbearffi.a
 	ln -fs ../../../bearssl-0.6/build/libbearssl.a target/release/deps
 	ln -fs ../../../bearffi/libbearffi.a target/release/deps
 
-bearffi/libbearffi.a: .PHONY
+.PHONY: bearffi/libbearffi.a
+bearffi/libbearffi.a:
 	make -C bearffi
 
 bearssl-0.6/build/libbearssl.a: bearssl-0.6.tar.gz
@@ -25,5 +26,6 @@ bearssl-0.6/build/libbearssl.a: bearssl-0.6.tar.gz
 	make -j 4 -C bearssl-0.6
 
 bearssl-0.6.tar.gz:
-	ftp https://bearssl.org/bearssl-0.6.tar.gz
+	ftp https://bearssl.org/bearssl-0.6.tar.gz || \
+	wget https://bearssl.org/bearssl-0.6.tar.gz
 
