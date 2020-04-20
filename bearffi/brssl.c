@@ -202,9 +202,8 @@ xwc_end_chain(const br_x509_class **ctx)
 
 	xwc = (x509_noanchor_context *)ctx;
 	r = (*xwc->inner)->end_chain(xwc->inner);
-	if (r == BR_ERR_X509_NOT_TRUSTED) {
-		r = 0;
-	}
+	/* no anchor, no error, no bueno */
+	r = 0;
 	return r;
 }
 

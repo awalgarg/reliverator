@@ -38,7 +38,10 @@ fn main() {
 		return;
 	}
 
-	let config = readconfig(&"reliverator.conf".to_string()).unwrap();
+	let config = match readconfig(&"reliverator.conf".to_string()) {
+		Ok(config) => config,
+		Err(e) => return println!("error reading config: {}", e),
+	};
 	let c2 = config.clone();
 	let t1 = thread::spawn(|| { relaylistener(c2); });
 	let c2 = config.clone();

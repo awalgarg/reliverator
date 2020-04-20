@@ -11,6 +11,7 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::convert::TryInto;
 use std::ffi::CString;
+use std::ffi::CStr;
 
 use crate::smtp::mailloop;
 use crate::smtp::after_switch;
@@ -60,7 +61,7 @@ extern {
 		       writer: *mut WriteHandle,
 		       writefn: extern fn (*mut WriteHandle, *const u8, usize) -> i32,
 	) -> *mut SslWrapper;
-	fn bear_client(hostname: *const i8, reader: *mut ReadHandle,
+	fn bear_client(skipverify: bool, hostname: *const i8, reader: *mut ReadHandle,
 		       readfn: extern fn (*mut ReadHandle, *mut u8, usize) -> i32,
 		       writer: *mut WriteHandle,
 		       writefn: extern fn (*mut WriteHandle, *const u8, usize) -> i32,
@@ -71,6 +72,7 @@ extern {
 	fn bear_flush(wrapper: *mut SslWrapper) -> i32;
 	fn bear_close(wrapper: *mut SslWrapper) -> i32;
 	fn bear_error(wrapper: *mut SslWrapper) -> i32;
+	fn bear_errormesg(error: i32) -> *const i8;
 }
 
 pub fn init(certfile: String, keyfile: String) -> Result<()> {
@@ -79,7 +81,7 @@ pub fn init(certfile: String, keyfile: String) -> Result<()> {
 		let ck = CString::new(keyfile).unwrap();
 		let rv = bear_init(cc.as_ptr(), ck.as_ptr());
 		if rv != 0 {
-			return Err(Error::new(ErrorKind::Other, "not a mail server!"));
+			return Err(Error::new(ErrorKind::Other, "can't init tls!"));
 		}
 		return Ok(());
 	}
@@ -108,8 +110,9 @@ impl Write for SslWrapper {
 			let rv = bear_write(self, ptr, len);
 			if rv == -1 {
 				let error = bear_error(self);
-				println!("bear error {}", error);
-				return Err(Error::new(ErrorKind::Other, "can't bear_write!"));
+				let mesg = error_mesg(error);
+				println!("bear error {}", mesg);
+				return Err(Error::new(ErrorKind::Other, format!("write failed: {}", mesg)));
 			}
 			return Ok(rv.try_into().unwrap());
 		}
@@ -147,7 +150,7 @@ pub fn client_switch<R: BufRead, W: Write>(hostname: String, config: &Config, fr
 		let cstr = CString::new(hostname).unwrap();
 		let mut rh = ReadHandle{reader: Box::new(r)};
 		let mut wh = WriteHandle{writer: Box::new(w)};
-		let wrapper = bear_client(cstr.as_ptr(), &mut rh, read_callback, &mut wh, write_callback);
+		let wrapper = bear_client(config.skipverify, cstr.as_ptr(), &mut rh, read_callback, &mut wh, write_callback);
 		if wrapper.is_null() {
 			return Err(Error::new(ErrorKind::Other, "can't switch to tls!"));
 		}
@@ -157,5 +160,12 @@ pub fn client_switch<R: BufRead, W: Write>(hostname: String, config: &Config, fr
 		bear_close(wrapper);
 		bear_freewrapper(wrapper);
 		return rv;
+	}
+}
+
+fn error_mesg(error: i32) -> String {
+	unsafe {
+		let mesg = bear_errormesg(error);
+		return CStr::from_ptr(mesg).to_str().unwrap().to_string();
 	}
 }

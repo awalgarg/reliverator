@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,6 +13,7 @@ struct wrapper {
 	br_ssl_client_context cc;
 	void *eng;
 	br_x509_minimal_context xc;
+	x509_noanchor_context xwc;
 	br_sslio_context ioc;
 	unsigned char iobuf[BR_SSL_BUFSIZE_BIDI];
 };
@@ -65,7 +67,7 @@ bear_server(void *rh, void *readfn, void *wh, void *writefn)
 }
 
 struct wrapper *
-bear_client(const char *hostname, void *rh, void *readfn, void *wh, void *writefn)
+bear_client(bool skipverify, const char *hostname, void *rh, void *readfn, void *wh, void *writefn)
 {
 	struct wrapper *wrapper;
 
@@ -75,6 +77,11 @@ bear_client(const char *hostname, void *rh, void *readfn, void *wh, void *writef
 	}
 
 	br_ssl_client_init_full(&wrapper->cc, &wrapper->xc, trust_anchors, num_trust_anchors);
+
+	if (skipverify) {
+		x509_noanchor_init(&wrapper->xwc, &wrapper->xc.vtable);
+		br_ssl_engine_set_x509(&wrapper->cc.eng, &wrapper->xwc.vtable);
+	}
 
 	br_ssl_engine_set_buffer(&wrapper->cc.eng, wrapper->iobuf, sizeof wrapper->iobuf, 1);
 
@@ -125,4 +132,12 @@ int
 bear_error(struct wrapper *wrapper)
 {
 	return br_ssl_engine_last_error(wrapper->eng);
+}
+
+const char *
+bear_errormesg(int error)
+{
+	const char *mesg;
+	find_error_name(error, &mesg);
+	return mesg;
 }

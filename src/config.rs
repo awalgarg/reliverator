@@ -12,6 +12,7 @@ pub struct Config {
 	pub aliases: HashMap<String, String>,
 	pub relay: bool,
 	pub ssl: bool,
+	pub skipverify: bool,
 }
 
 pub fn readconfig(filename: &String) -> Result<Config> {
@@ -19,6 +20,7 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 	let mut certfile = "".to_string();
 	let mut keyfile = "".to_string();
 	let mut aliases = HashMap::new();
+	let mut skipverify = false;
 
 	let file = File::open(filename)?;
 	for line in BufReader::new(file).lines() {
@@ -41,6 +43,16 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 			"keyfile" => {
 				keyfile = v[1].to_string();
 			},
+			"option" => {
+				match v[1] {
+					"skipverify" => {
+						skipverify = true;
+					},
+					_ => {
+						println!("unknown config option {}", v[0]);
+					},
+				}
+			},
 			_ => {
 				println!("unknown config option {}", v[0]);
 			},
@@ -59,6 +71,7 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 		aliases: aliases,
 		relay: false,
 		ssl: ssl,
+		skipverify: skipverify,
 	});
 }
 
