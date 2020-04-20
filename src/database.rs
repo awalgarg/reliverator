@@ -56,13 +56,16 @@ pub fn requeue_mesg(mesgid: i64, tries: i64) {
 		3 => {
 			next = now + 13600;
 		},
+		4 => {
+			next = now + 123600;
+		},
 		_ => {
 			println!("it's dead!");
 		},
 	}
 	let conn = open_database();
 	if let Err(e) = conn.execute("update mesgs set due = ?, tries = ? where mesgid = ?",
-		params![next, tries + 1, mesgid]) {
+		params![next, tries, mesgid]) {
 			println!("failed to requeue mesg: {}", e);
 	}
 }
