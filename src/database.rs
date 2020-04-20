@@ -23,7 +23,7 @@ pub fn save_mesg_to_db(from: &String, rcpt: &String, mesg: String, due: i64, tri
 pub fn get_overdue_mesg() -> Result<(i64, String, String, String, i64)> {
 	let now = chrono::Local::now().timestamp();
 	let conn = open_database();
-	conn.query_row("select mesgid, frm, rcpt, mesg, tries from mesgs where due < ? order by due asc",
+	conn.query_row("select mesgid, frm, rcpt, mesg, tries from mesgs where due > 0 and due < ? order by due asc",
 		       params![now],
 		       |row| {
 			       let mesgid = row.get(0)?;
@@ -44,25 +44,17 @@ pub fn delete_mesg(mesgid: i64) {
 }
 
 pub fn requeue_mesg(mesgid: i64, tries: i64) {
-	let mut next = 0i64;
 	let now = chrono::Local::now().timestamp();
-	match tries {
-		1 => {
-			next = now + 600;
-		},
-		2 => {
-			next = now + 3600;
-		},
-		3 => {
-			next = now + 13600;
-		},
-		4 => {
-			next = now + 123600;
-		},
+	let next = match tries {
+		1 => now + 600 ,
+		2 => now + 3600 ,
+		3 => now + 13600 ,
+		4 => now + 123600 ,
 		_ => {
 			println!("it's dead!");
+			-1
 		},
-	}
+	};
 	let conn = open_database();
 	if let Err(e) = conn.execute("update mesgs set due = ?, tries = ? where mesgid = ?",
 		params![next, tries, mesgid]) {
