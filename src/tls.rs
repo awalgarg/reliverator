@@ -31,6 +31,7 @@ extern "C" fn read_callback(handle: *mut ReadHandle, buf: *mut u8, buflen: usize
 		let mut slice = slice::from_raw_parts_mut(buf, buflen);
 		let rv = match (*handle).reader.read(&mut slice) {
 			Err(_) => return -1,
+			Ok(0) => return -1,
 			Ok(rv) => rv.try_into().unwrap(),
 		};
 		return rv;
@@ -95,8 +96,9 @@ impl Read for SslWrapper {
 			let rv = bear_read(self, ptr, len);
 			if rv == -1 {
 				let error = bear_error(self);
-				println!("bear error {}", error);
-				return Err(Error::new(ErrorKind::Other, "can't bear_read!"));
+				let mesg = error_mesg(error);
+				println!("bear read error {}", mesg);
+				return Err(Error::new(ErrorKind::Other, format!("read failed: {}", mesg)));
 			}
 			return Ok(rv.try_into().unwrap());
 		}
@@ -111,7 +113,7 @@ impl Write for SslWrapper {
 			if rv == -1 {
 				let error = bear_error(self);
 				let mesg = error_mesg(error);
-				println!("bear error {}", mesg);
+				println!("bear write error {}", mesg);
 				return Err(Error::new(ErrorKind::Other, format!("write failed: {}", mesg)));
 			}
 			return Ok(rv.try_into().unwrap());
