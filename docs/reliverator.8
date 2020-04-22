@@ -41,10 +41,14 @@ The follow options may be specified in the config file.
 Server's hostname.
 .It alias
 alias root tedu to have root's mail delivered to tedu.
+.It wildcard
+wildcard example.org tedu to have any mail to example.org delivered to tedu.
 .It certfile
 The server's public certificate chain.
 .It keyname
 The server's private key.
+.It option
+option skipverify to disable cert verification for delivery.
 .El
 .Ss Security
 .Nm

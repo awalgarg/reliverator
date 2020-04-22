@@ -131,7 +131,7 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
 					w.write(b"501 who now?\r\n")?;
 					continue;
 				}
-				let g = format!("250 mailserver looking good {}\r\n", conn.addr.ip());
+				let g = format!("250 {} looking good {}\r\n", conn.config.myname, conn.addr.ip());
 				w.write(g.as_bytes())?;
 				conn.helo = v[1].to_string();
 				conn.state = GREETINGS;
@@ -185,8 +185,7 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
 					},
 					Ok(addr) => {
 						if !conn.config.relay {
-							let mut who = extract_user(&addr);
-							who = mapuser(who, &conn.config);
+							let who = mapuser(&addr, &conn.config);
 							if find_userid(&who) == -1 {
 								println!("no match for user: {}", who);
 								w.write(b"550 that is not going to work\r\n")?;
@@ -265,12 +264,6 @@ fn parse_rcpt_to(rcpt: String) -> Result<String> {
 	}
 }
 
-fn extract_user(addr: &String) -> String {
-	let re = Regex::new("([a-zA-Z0-9]+)([a-zA-Z0-9._+]*)@?([a-zA-Z0-9_.]*)").unwrap();
-	let captures = re.captures(&addr).unwrap();
-	return captures.get(1).unwrap().as_str().to_string();
-}
-
 fn extract_domain(rcpt: &String) -> Result<String> {
 	let re = Regex::new("([a-zA-Z0-9]+)([a-zA-Z0-9._+]*)@?([a-zA-Z0-9_.]*)").unwrap();
 	match re.captures(&rcpt) {
@@ -312,8 +305,7 @@ fn deliver_local(conn: &Connection, data: String) -> Result<()> {
 	let proto = if conn.secure { "ESMTPS" } else { "SMTP" };
 	let timestamp = now.to_rfc2822();
 	for rcpt in &conn.rcpts {
-		let mut user = extract_user(rcpt);
-		user = mapuser(user, &conn.config);
+		let user = mapuser(&rcpt, &conn.config);
 		let randid = rand::thread_rng().gen_range(1000000, 10000000);
 		let fname = format!("{}.{}.{}.{}", now.timestamp(), conn.sessid, randid, host);
 		let tmpname = format!("/home/{}/Maildir/tmp/{}", user, fname);

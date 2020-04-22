@@ -3,6 +3,7 @@ use std::io::Result;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::fs::File;
+use regex::Regex;
 
 use crate::tls;
 
@@ -10,16 +11,18 @@ use crate::tls;
 pub struct Config {
 	pub myname: String,
 	pub aliases: HashMap<String, String>,
+	pub wildcards: HashMap<String, String>,
 	pub relay: bool,
 	pub ssl: bool,
 	pub skipverify: bool,
 }
 
 pub fn readconfig(filename: &String) -> Result<Config> {
-	let mut myname = "mailserver".to_string();
+	let mut myname = "localhost".to_string();
 	let mut certfile = "".to_string();
 	let mut keyfile = "".to_string();
 	let mut aliases = HashMap::new();
+	let mut wildcards = HashMap::new();
 	let mut skipverify = false;
 
 	let file = File::open(filename)?;
@@ -32,6 +35,10 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 		match v[0] {
 			"alias" => {
 				aliases.insert(v[1].to_string(),
+					v[2].to_string());
+			},
+			"wildcard" => {
+				wildcards.insert(v[1].to_string(),
 					v[2].to_string());
 			},
 			"servername" => {
@@ -69,15 +76,37 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 	return Ok(Config{
 		myname: myname,
 		aliases: aliases,
+		wildcards: wildcards,
 		relay: false,
 		ssl: ssl,
 		skipverify: skipverify,
 	});
 }
 
-pub fn mapuser(who: String, config: &Config) -> String {
-	match config.aliases.get(&who) {
-		Some(who) => return who.to_string(),
-		None => return who,
+fn split_addr(addr: &String) -> (String, String) {
+	let re = Regex::new("([a-zA-Z0-9]+)([a-zA-Z0-9._+]*)@?([a-zA-Z0-9_.]*)").unwrap();
+	let captures = re.captures(&addr).unwrap();
+	let user =  captures.get(1).unwrap().as_str().to_string();
+	let domain = match captures.get(3) {
+		None => String::new(),
+		Some(domain) => domain.as_str().to_string(),
+	};
+	return (user, domain);
+}
+
+pub fn mapuser(addr: &String, config: &Config) -> String {
+	let (user, domain) = split_addr(addr);
+	if let Some(user) =  config.wildcards.get(&domain) {
+		return user.to_string();
 	}
+	if let Some(alias) = config.aliases.get(addr) {
+		return alias.to_string();
+	}
+	if domain == config.myname {
+		if let Some(alias) = config.aliases.get(&user) {
+			return alias.to_string();
+		}
+		return user.to_string()
+	}
+	return String::new();
 }
