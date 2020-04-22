@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::Result;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -12,6 +13,7 @@ pub struct Config {
 	pub myname: String,
 	pub aliases: HashMap<String, String>,
 	pub wildcards: HashMap<String, String>,
+	pub domains: HashSet<String>,
 	pub relay: bool,
 	pub ssl: bool,
 	pub skipverify: bool,
@@ -23,6 +25,7 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 	let mut keyfile = "".to_string();
 	let mut aliases = HashMap::new();
 	let mut wildcards = HashMap::new();
+	let mut domains = HashSet::new();
 	let mut skipverify = false;
 
 	let file = File::open(filename)?;
@@ -40,6 +43,9 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 			"wildcard" => {
 				wildcards.insert(v[1].to_string(),
 					v[2].to_string());
+			},
+			"domain" => {
+				domains.insert(v[1].to_string());
 			},
 			"servername" => {
 				myname = v[1].to_string();
@@ -77,6 +83,7 @@ pub fn readconfig(filename: &String) -> Result<Config> {
 		myname: myname,
 		aliases: aliases,
 		wildcards: wildcards,
+		domains: domains,
 		relay: false,
 		ssl: ssl,
 		skipverify: skipverify,
@@ -94,19 +101,19 @@ fn split_addr(addr: &String) -> (String, String) {
 	return (user, domain);
 }
 
-pub fn mapuser(addr: &String, config: &Config) -> String {
+pub fn mapuser(addr: &String, config: &Config) -> Option<String> {
 	let (user, domain) = split_addr(addr);
 	if let Some(user) =  config.wildcards.get(&domain) {
-		return user.to_string();
+		return Some(user.to_string());
 	}
 	if let Some(alias) = config.aliases.get(addr) {
-		return alias.to_string();
+		return Some(alias.to_string());
 	}
-	if domain == config.myname {
+	if config.domains.is_empty() || config.domains.contains(&domain) {
 		if let Some(alias) = config.aliases.get(&user) {
-			return alias.to_string();
+			return Some(alias.to_string());
 		}
-		return user.to_string()
+		return Some(user.to_string());
 	}
-	return String::new();
+	return None;
 }

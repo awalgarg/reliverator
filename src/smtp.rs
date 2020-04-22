@@ -186,9 +186,9 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
 					Ok(addr) => {
 						if !conn.config.relay {
 							let who = mapuser(&addr, &conn.config);
-							if find_userid(&who) == -1 {
-								println!("no match for user: {}", who);
-								w.write(b"550 that is not going to work\r\n")?;
+							if who.is_none() || find_userid(&who.unwrap()) == -1 {
+								println!("no match for user: {}", addr);
+								w.write(b"550 new phone who dis\r\n")?;
 								continue;
 							}
 						}
@@ -305,7 +305,10 @@ fn deliver_local(conn: &Connection, data: String) -> Result<()> {
 	let proto = if conn.secure { "ESMTPS" } else { "SMTP" };
 	let timestamp = now.to_rfc2822();
 	for rcpt in &conn.rcpts {
-		let user = mapuser(&rcpt, &conn.config);
+		let user = match mapuser(&rcpt, &conn.config) {
+			Some(user) => user,
+			None => { println!("where did my rcpt {} go?", rcpt); continue; },
+		};
 		let randid = rand::thread_rng().gen_range(1000000, 10000000);
 		let fname = format!("{}.{}.{}.{}", now.timestamp(), conn.sessid, randid, host);
 		let tmpname = format!("/home/{}/Maildir/tmp/{}", user, fname);
