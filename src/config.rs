@@ -102,11 +102,12 @@ fn split_addr(addr: &String) -> (String, String) {
 }
 
 pub fn mapuser(addr: &String, config: &Config) -> Option<String> {
-	let (user, domain) = split_addr(addr);
+	let addr = addr.to_ascii_lowercase();
+	let (user, domain) = split_addr(&addr);
 	if let Some(user) =  config.wildcards.get(&domain) {
 		return Some(user.to_string());
 	}
-	if let Some(alias) = config.aliases.get(addr) {
+	if let Some(alias) = config.aliases.get(&addr) {
 		return Some(alias.to_string());
 	}
 	if config.domains.is_empty() || config.domains.contains(&domain) {
