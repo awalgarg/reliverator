@@ -2,7 +2,7 @@ use chrono;
 use rand::Rng;
 use regex::Regex;
 use std::fs;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -330,7 +330,7 @@ fn deliver_local(conn: &Connection, data: String) -> Result<()> {
         let randid = rand::thread_rng().gen_range(1000000, 10000000);
         let fname = format!("{}.{}.{}.{}", now.timestamp(), conn.sessid, randid, host);
         let tmpname = format!("/home/{}/Maildir/tmp/{}", user, fname);
-        let mut f = File::create(&tmpname)?;
+        let mut f = OpenOptions::new().write(true).create_new(true).open(&tmpname)?;
 
         f.write_all(format!("Return-Path: <{}>\n", conn.from).as_bytes())?;
         f.write_all(format!("Delivered-To: {}\n", rcpt).as_bytes())?;
