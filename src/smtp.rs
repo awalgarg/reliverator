@@ -87,7 +87,7 @@ const POSITRONIC: u32 = 5;
 
 fn processclient(mut s: TcpStream, mut conn: Connection) -> Result<()> {
     println!("connection from {}", conn.addr);
-    s.write(format!("220 {} ESMTP reliverator\r\n", conn.config.myname).as_bytes())?;
+    s.write_all(format!("220 {} ESMTP reliverator\r\n", conn.config.myname).as_bytes())?;
 
     let r = BufReader::new(&s);
     let w = BufWriter::new(&s);
@@ -103,32 +103,32 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
         let cmd = v[0];
         match &cmd.to_ascii_uppercase()[..] {
             "HELP" => {
-                w.write(b"214 the prognosis is dire\r\n")?;
+                w.write_all(b"214 the prognosis is dire\r\n")?;
             }
             "STARTTLS" => {
                 if !conn.config.ssl {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 if conn.secure {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 if conn.state != INTHEBEGINNING && conn.state != GREETINGS {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
-                w.write(b"220 this line is secure\r\n")?;
+                w.write_all(b"220 this line is secure\r\n")?;
                 w.flush()?;
                 return tls::server_switch(r, w, conn);
             }
             "HELO" => {
                 if conn.state != INTHEBEGINNING && conn.state != GREETINGS {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 if v.len() == 1 {
-                    w.write(b"501 who now?\r\n")?;
+                    w.write_all(b"501 who now?\r\n")?;
                     continue;
                 }
                 let g = format!(
@@ -136,17 +136,17 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
                     conn.config.myname,
                     conn.addr.ip()
                 );
-                w.write(g.as_bytes())?;
+                w.write_all(g.as_bytes())?;
                 conn.helo = v[1].to_string();
                 conn.state = GREETINGS;
             }
             "EHLO" => {
                 if conn.state != INTHEBEGINNING && conn.state != GREETINGS {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 if v.len() == 1 {
-                    w.write(b"501 who now?\r\n")?;
+                    w.write_all(b"501 who now?\r\n")?;
                     continue;
                 }
                 let repl = format!(
@@ -154,76 +154,76 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
                     conn.config.myname,
                     conn.addr.ip()
                 );
-                w.write(repl.as_bytes())?;
+                w.write_all(repl.as_bytes())?;
                 if conn.config.ssl {
-                    w.write(b"250-STARTTLS\r\n")?;
+                    w.write_all(b"250-STARTTLS\r\n")?;
                 }
-                w.write(b"250-8BITMIME\r\n")?;
-                w.write(b"250 HELP\r\n")?;
+                w.write_all(b"250-8BITMIME\r\n")?;
+                w.write_all(b"250 HELP\r\n")?;
                 conn.helo = v[1].to_string();
                 conn.state = GREETINGS;
             }
             "MAIL" => {
                 if conn.state != GREETINGS {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 match parse_mail_from(l.to_string()) {
                     Err(e) => {
                         println!("didn't parse from: {}", e);
-                        w.write(b"550 speak clearly please\r\n")?;
+                        w.write_all(b"550 speak clearly please\r\n")?;
                     }
                     Ok(who) => {
                         println!("mail from: {}", who);
                         conn.from = who;
-                        w.write(b"250 got it\r\n")?;
+                        w.write_all(b"250 got it\r\n")?;
                         conn.state = IVEGOTMAIL;
                     }
                 }
             }
             "RCPT" => {
                 if conn.state != IVEGOTMAIL && conn.state != YOUVEGOTMAIL {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
                 match parse_rcpt_to(l.to_string()) {
                     Err(e) => {
                         println!("didn't parse rcpt: {}", e);
-                        w.write(b"550 that is not going to work\r\n")?;
+                        w.write_all(b"550 that is not going to work\r\n")?;
                     }
                     Ok(addr) => {
                         if !conn.config.relay {
                             let who = mapuser(&addr, &conn.config);
                             if who.is_none() || find_userid(&who.unwrap()) == -1 {
                                 println!("no match for user: {}", addr);
-                                w.write(b"550 new phone who dis\r\n")?;
+                                w.write_all(b"550 new phone who dis\r\n")?;
                                 continue;
                             }
                         }
                         println!("rcpt to: {}", addr);
                         conn.rcpts.push(addr);
-                        w.write(b"250 righto\r\n")?;
+                        w.write_all(b"250 righto\r\n")?;
                         conn.state = YOUVEGOTMAIL;
                     }
                 }
             }
             "DATA" => {
                 if conn.state != YOUVEGOTMAIL {
-                    w.write(b"500 that was not good\r\n")?;
+                    w.write_all(b"500 that was not good\r\n")?;
                     continue;
                 }
-                w.write(b"354 give it to me\r\n")?;
+                w.write_all(b"354 give it to me\r\n")?;
                 w.flush()?;
                 conn.state = POSITRONIC;
                 let data = readdata(&mut r)?;
                 match deliver(conn, data) {
                     Err(e) => {
                         println!("delivery failed: {}", e);
-                        w.write(b"550 that is not going to work\r\n")?;
+                        w.write_all(b"550 that is not going to work\r\n")?;
                         continue;
                     }
                     Ok(()) => {
-                        w.write(b"250 all aboard\r\n")?;
+                        w.write_all(b"250 all aboard\r\n")?;
                     }
                 }
                 conn.state = GREETINGS;
@@ -231,13 +231,13 @@ pub fn mailloop<R: BufRead, W: Write>(mut r: R, mut w: W, conn: &mut Connection)
                 conn.rcpts = Vec::new();
             }
             "QUIT" => {
-                w.write(b"221 nachti nachti\r\n")?;
+                w.write_all(b"221 nachti nachti\r\n")?;
                 w.flush()?;
                 break;
             }
             cmd => {
                 println!("unknown cmd: {}", cmd);
-                w.write(b"500 that was not good\r\n")?;
+                w.write_all(b"500 that was not good\r\n")?;
             }
         }
     }
@@ -403,7 +403,7 @@ pub fn sendmail(config: &Config, from: &String, rcpt: &String, data: String) -> 
         return Err(Error::new(ErrorKind::Other, "not a mail server!"));
     }
     let g = format!("ehlo {}\r\n", config.myname);
-    w.write(g.as_bytes())?;
+    w.write_all(g.as_bytes())?;
     w.flush()?;
     let mut secure = false;
     loop {
@@ -420,7 +420,7 @@ pub fn sendmail(config: &Config, from: &String, rcpt: &String, data: String) -> 
         }
     }
     if secure {
-        w.write(b"STARTTLS\r\n")?;
+        w.write_all(b"STARTTLS\r\n")?;
         w.flush()?;
         let l = readline(&mut r)?;
         if l.starts_with("220 ") {
@@ -440,7 +440,7 @@ pub fn after_switch<R: BufRead, W: Write>(
     mut w: W,
 ) -> Result<()> {
     let g = format!("ehlo {}\r\n", config.myname);
-    w.write(g.as_bytes())?;
+    w.write_all(g.as_bytes())?;
     w.flush()?;
     loop {
         let l = readline(&mut r)?;
@@ -463,7 +463,7 @@ fn client_send<R: BufRead, W: Write>(
     mut w: W,
 ) -> Result<()> {
     let mailfrom = format!("MAIL FROM: <{}>\r\n", from);
-    w.write(mailfrom.as_bytes())?;
+    w.write_all(mailfrom.as_bytes())?;
     w.flush()?;
     let l = readline(&mut r)?;
     if !l.starts_with("250 ") {
@@ -471,32 +471,32 @@ fn client_send<R: BufRead, W: Write>(
         return Err(Error::new(ErrorKind::Other, "didn't like mail from!"));
     }
     let rcpto = format!("RCPT TO: <{}>\r\n", rcpt);
-    w.write(rcpto.as_bytes())?;
+    w.write_all(rcpto.as_bytes())?;
     w.flush()?;
     let l = readline(&mut r)?;
     if !l.starts_with("250 ") {
         println!("bad rcpt: {}", l);
         return Err(Error::new(ErrorKind::Other, "didn't like rcpt to!"));
     }
-    w.write(b"DATA\r\n")?;
+    w.write_all(b"DATA\r\n")?;
     w.flush()?;
     let l = readline(&mut r)?;
     if !l.starts_with("354 ") {
         println!("no data: {}", l);
         return Err(Error::new(ErrorKind::Other, "doesn't want data!"));
     }
-    w.write(data.as_bytes())?;
+    w.write_all(data.as_bytes())?;
     if !data.ends_with("\r\n") {
-        w.write(b"\r\n")?;
+        w.write_all(b"\r\n")?;
     }
-    w.write(b".\r\n")?;
+    w.write_all(b".\r\n")?;
     w.flush()?;
     let l = readline(&mut r)?;
     if !l.starts_with("250 ") {
         println!("bad data: {}", l);
         return Err(Error::new(ErrorKind::Other, "didn't like data!"));
     }
-    w.write(b"QUIT\r\n")?;
+    w.write_all(b"QUIT\r\n")?;
     w.flush()?;
     println!("send successful");
 
