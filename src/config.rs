@@ -75,13 +75,13 @@ pub fn readconfig(filename: &String) -> Result<Config> {
     }
 
     return Ok(Config {
-        myname: myname,
-        aliases: aliases,
-        wildcards: wildcards,
-        domains: domains,
+        myname,
+        aliases,
+        wildcards,
+        domains,
         relay: false,
-        ssl: ssl,
-        skipverify: skipverify,
+        ssl,
+        skipverify,
     });
 }
 
