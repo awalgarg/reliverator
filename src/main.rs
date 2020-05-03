@@ -1,4 +1,7 @@
 use std::convert::TryInto;
+use std::io::Result;
+use std::io::Error;
+use std::io::ErrorKind;
 use std::env;
 use std::ffi::CString;
 use std::net::TcpListener;
@@ -141,13 +144,17 @@ fn find_userid(user: &str) -> i32 {
     }
 }
 
-fn gift(filename: &str, user: &str) {
+fn gift(filename: &str, user: &str) -> Result<()> {
     let uid = find_userid(&user);
     if uid == -1 {
-        return;
+        return Ok(());
     }
     unsafe {
         let path = CString::new(filename).unwrap();
-        chown(path.as_ptr(), uid, -1);
+        let rv = chown(path.as_ptr(), uid, -1);
+	if rv == -1 {
+		return Err(Error::new(ErrorKind::Other, "failed to chown!"));
+	}
     }
+    return Ok(());
 }

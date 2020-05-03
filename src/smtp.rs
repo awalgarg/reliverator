@@ -346,7 +346,7 @@ fn deliver_local(conn: &Connection, data: String) -> Result<()> {
         f.write_all(recv.as_bytes())?;
         f.write_all(data.as_bytes())?;
         f.sync_all()?;
-        gift(&tmpname, &user);
+        gift(&tmpname, &user)?;
         let newname = format!("/home/{}/Maildir/new/{}", user, fname);
         fs::rename(&tmpname, &newname)?;
         println!("delivered to {}", newname);
