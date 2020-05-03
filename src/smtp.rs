@@ -382,7 +382,7 @@ fn save_for_relay(conn: &Connection, data: String) -> Result<()> {
     return Ok(());
 }
 
-pub fn sendmail(config: &Config, from: &String, rcpt: &String, data: String) -> Result<()> {
+pub fn sendmail(config: &Config, from: &str, rcpt: &String, data: String) -> Result<()> {
     let domain = match extract_domain(&rcpt) {
         Err(e) => return Err(e),
         Ok(domain) => domain,
@@ -433,8 +433,8 @@ pub fn sendmail(config: &Config, from: &String, rcpt: &String, data: String) -> 
 
 pub fn after_switch<R: BufRead, W: Write>(
     config: &Config,
-    from: &String,
-    rcpt: &String,
+    from: &str,
+    rcpt: &str,
     data: String,
     mut r: R,
     mut w: W,
@@ -456,8 +456,8 @@ pub fn after_switch<R: BufRead, W: Write>(
 }
 
 fn client_send<R: BufRead, W: Write>(
-    from: &String,
-    rcpt: &String,
+    from: &str,
+    rcpt: &str,
     data: String,
     mut r: R,
     mut w: W,

@@ -130,10 +130,10 @@ extern "C" {
     fn chown(path: *const i8, uid: i32, gid: i32) -> i32;
 }
 
-fn find_userid(user: &String) -> i32 {
+fn find_userid(user: &str) -> i32 {
     let _lock = PWLOCK.lock();
     unsafe {
-        let cstr = CString::new(user.as_str()).unwrap();
+        let cstr = CString::new(user).unwrap();
         let pwd = libc::getpwnam(cstr.as_ptr());
         if pwd.is_null() {
             return -1;
@@ -142,13 +142,13 @@ fn find_userid(user: &String) -> i32 {
     }
 }
 
-fn gift(filename: &String, user: &String) {
+fn gift(filename: &str, user: &str) {
     let uid = find_userid(&user);
     if uid == -1 {
         return;
     }
     unsafe {
-        let path = CString::new(filename.as_str()).unwrap();
+        let path = CString::new(filename).unwrap();
         chown(path.as_ptr(), uid, -1);
     }
 }

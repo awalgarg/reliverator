@@ -12,11 +12,11 @@ use domain::resolv::lookup::lookup_addr;
 use domain::resolv::Resolver;
 use tokio_core::reactor::Core;
 
-pub fn lookupmx(domain: &String) -> Result<String> {
+pub fn lookupmx(domain: &str) -> Result<String> {
     let mut core = Core::new().unwrap();
     let resolv = Resolver::new(&core.handle());
 
-    let mut domain = domain.clone();
+    let mut domain = domain.to_string();
     domain.push('.');
     let name = DNameBuf::from_str(&domain).unwrap();
 

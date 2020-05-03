@@ -162,8 +162,8 @@ pub fn server_switch<R: BufRead, W: Write>(r: R, w: W, conn: &mut Connection) ->
 pub fn client_switch<R: BufRead, W: Write>(
     hostname: String,
     config: &Config,
-    from: &String,
-    rcpt: &String,
+    from: &str,
+    rcpt: &str,
     data: String,
     r: R,
     w: W,
