@@ -3,6 +3,9 @@ all: debug
 check:
 	cargo check
 
+clippy:
+	cargo clippy -- -A clippy::needless_return -A clippy::many_single_char_names -A clippy::unreadable_literal
+
 debug: step0
 	cargo build
 

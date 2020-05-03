@@ -1,4 +1,3 @@
-use chrono;
 use rand::Rng;
 use regex::Regex;
 use std::fs;
@@ -65,10 +64,10 @@ pub fn handleclient(config: Config, s: TcpStream, addr: SocketAddr) {
     let randid = rand::thread_rng().gen_range(1000000, 10000000);
     let sessid = randid.to_string();
     let conn = Connection {
-        config: config,
+        config,
         state: INTHEBEGINNING,
-        addr: addr,
-        sessid: sessid,
+        addr,
+        sessid,
         helo: String::new(),
         from: String::new(),
         rcpts: Vec::new(),
@@ -271,7 +270,7 @@ fn parse_rcpt_to(rcpt: String) -> Result<String> {
     }
 }
 
-fn extract_domain(rcpt: &String) -> Result<String> {
+fn extract_domain(rcpt: &str) -> Result<String> {
     let re = Regex::new("([a-zA-Z0-9]+)([a-zA-Z0-9._+]*)@?([a-zA-Z0-9_.]*)").unwrap();
     match re.captures(&rcpt) {
         None => {
@@ -292,14 +291,14 @@ fn deliver(conn: &Connection, data: String) -> Result<()> {
 }
 
 fn format_received(
-    helo: &String,
-    revname: &String,
+    helo: &str,
+    revname: &str,
     ipaddr: IpAddr,
-    myname: &String,
-    proto: &String,
-    sessid: &String,
-    rcpt: &String,
-    timestamp: &String,
+    myname: &str,
+    proto: &str,
+    sessid: &str,
+    rcpt: &str,
+    timestamp: &str,
 ) -> String {
     return format!(
         r"Received: from {} ({} [{}])
@@ -382,7 +381,7 @@ fn save_for_relay(conn: &Connection, data: String) -> Result<()> {
     return Ok(());
 }
 
-pub fn sendmail(config: &Config, from: &str, rcpt: &String, data: String) -> Result<()> {
+pub fn sendmail(config: &Config, from: &str, rcpt: &str, data: String) -> Result<()> {
     let domain = match extract_domain(&rcpt) {
         Err(e) => return Err(e),
         Ok(domain) => domain,

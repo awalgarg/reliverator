@@ -1,4 +1,3 @@
-use chrono;
 use rusqlite::{params, Connection, Result};
 
 fn open_database() -> Connection {
@@ -11,7 +10,7 @@ pub fn init() {
     conn.execute("create table mesgs (mesgid integer primary key, frm text, rcpt text, mesg text, due integer, tries integer);", rusqlite::NO_PARAMS).unwrap();
 }
 
-pub fn save_mesg_to_db(from: &str, rcpt: &String, mesg: String, due: i64, tries: i64) {
+pub fn save_mesg_to_db(from: &str, rcpt: &str, mesg: String, due: i64, tries: i64) {
     let conn = open_database();
     if let Err(e) = conn.execute(
         "insert into mesgs (frm, rcpt, mesg, due, tries) values (?, ?, ?, ?, ?)",

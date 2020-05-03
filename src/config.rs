@@ -19,7 +19,7 @@ pub struct Config {
     pub skipverify: bool,
 }
 
-pub fn readconfig(filename: &String) -> Result<Config> {
+pub fn readconfig(filename: &str) -> Result<Config> {
     let mut myname = "localhost".to_string();
     let mut certfile = "".to_string();
     let mut keyfile = "".to_string();
@@ -85,7 +85,7 @@ pub fn readconfig(filename: &String) -> Result<Config> {
     });
 }
 
-fn split_addr(addr: &String) -> (String, String) {
+fn split_addr(addr: &str) -> (String, String) {
     let re = Regex::new("([a-zA-Z0-9]+)([a-zA-Z0-9._+]*)@?([a-zA-Z0-9_.]*)").unwrap();
     let captures = re.captures(&addr).unwrap();
     let user = captures.get(1).unwrap().as_str().to_string();
@@ -96,7 +96,7 @@ fn split_addr(addr: &String) -> (String, String) {
     return (user, domain);
 }
 
-pub fn mapuser(addr: &String, config: &Config) -> Option<String> {
+pub fn mapuser(addr: &str, config: &Config) -> Option<String> {
     let addr = addr.to_ascii_lowercase();
     let (user, domain) = split_addr(&addr);
     if let Some(user) = config.wildcards.get(&domain) {
