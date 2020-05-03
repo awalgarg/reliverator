@@ -148,7 +148,7 @@ fn gift(filename: &String, user: &String) {
         return;
     }
     unsafe {
-        let path = CString::new(filename.as_str()).unwrap().as_ptr();
-        chown(path, uid, -1);
+        let path = CString::new(filename.as_str()).unwrap();
+        chown(path.as_ptr(), uid, -1);
     }
 }
